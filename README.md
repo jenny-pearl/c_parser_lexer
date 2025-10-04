@@ -3,4 +3,6 @@ A basic parser and lexer.
 
 This is not meant to be production ready code. Just for me to understand stuff.
 
-Can't parse macros for now :(
+Can't lex macros for now :(
+
+Can't parse for now :(
