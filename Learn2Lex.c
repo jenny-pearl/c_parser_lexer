@@ -1,35 +1,39 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-int jcc_lexer_comment(char curChar, FILE *fp);
-int jcc_lexer_num(char curChar, FILE *fp);
-int jcc_lexer_keyword_var_func(char curChar, FILE *fp);
-int jcc_lexer_char_str(char curChar, FILE *fp);
-int jcc_lexer_macro(char churChar, FILE *fp);
+int jcc_lexer_char_str(char curChar, FILE *readFile, FILE *writeFile);
+int jcc_lexer_comment(char curChar, FILE *readFile, FILE *writeFile);
+int jcc_lexer_num(char curChar, FILE *readFile, FILE *writeFile);
+int jcc_lexer_keyword_var_func(char curChar, FILE *readFile, FILE *writeFile);
+int jcc_lexer_macro(char curChar, FILE *readFile, FILE *writeFile);
 
-const char *filename = "./test.c";
+const char *infile = "./test.c";
+const char *outfile = "./lexedTest.txt";
 
 int main(void)
 {
 	char curChar = 0x10;
-	FILE *fp = fopen(filename, "r");
+	FILE *readFile = fopen(infile, "r");
+	FILE *writeFile = fopen(outfile, "w");
 
 	while (curChar != EOF) {
-		curChar = getc(fp);
+		curChar = getc(readFile);
 		switch (curChar) {
 		case '	':
 		case ' ':
 		case '\n':
 			break;
 		case '/':
-			jcc_lexer_comment(curChar, fp);
+			jcc_lexer_comment(curChar, readFile, writeFile);
 			break;
 		case '#':
-			jcc_lexer_macro(curChar, fp);
+			fprintf(writeFile, "%c\n", curChar);
+			jcc_lexer_macro(curChar, readFile, writeFile);
 			break;
 		case '\'':
 		case '\"':
-			printf("%c", curChar);
-			jcc_lexer_char_str(curChar, fp);
+			fprintf(writeFile, "%c", curChar);
+			jcc_lexer_char_str(curChar, readFile, writeFile);
 			break;
 		case '(': 
 		case ')':
@@ -37,7 +41,7 @@ int main(void)
 		case '}':
 		case '[':
 		case ']':
-			printf("%c\n", curChar);
+			fprintf(writeFile, "%c\n", curChar);
 			break;
 		case '0':
 		case '1':
@@ -49,8 +53,8 @@ int main(void)
 		case '7':
 		case '8':
 		case '9':
-			printf("%c", curChar);
-			jcc_lexer_num(curChar, fp);
+			fprintf(writeFile, "%c", curChar);
+			jcc_lexer_num(curChar, readFile, writeFile);
 			break;
 		case '_':
 		case 'a':
@@ -105,113 +109,102 @@ int main(void)
 		case 'X':
 		case 'Y':
 		case 'Z':
-			printf("%c", curChar);
-			jcc_lexer_keyword_var_func(curChar, fp);
+			fprintf(writeFile, "%c", curChar);
+			jcc_lexer_keyword_var_func(curChar, readFile, writeFile);
 			break;
 		default:
-			printf("%c\n", curChar);
+			fprintf(writeFile, "%c\n", curChar);
 			break;
 		}
 	}
-	fclose(fp);
+	fclose(readFile);
+	fclose(writeFile);
 	return 0;
 }
 
-int jcc_lexer_num(char curChar, FILE *fp)
+int jcc_lexer_num(char curChar, FILE *readFile, FILE *writeFile)
 {
 	while (1) {
-		curChar = getc(fp);
-		if (curChar >= 48 && curChar <= 57) {
-			printf("%c", curChar);
+		curChar = getc(readFile);
+		if (curChar >= 48 && curChar <= 57 || curChar == '.') {
+			fprintf(writeFile, "%c", curChar);
 		} else if (curChar != EOF && curChar != ' ' && curChar != '\n' && curChar != '	') {
-			printf("\n%c", curChar);
+			fprintf(writeFile, "\n%c", curChar);
 			break;
 		} else {
 			break;
 		}
 	}
-	printf("\n");
+	fprintf(writeFile, "\n");
 	return 0;
 }
 
-int jcc_lexer_keyword_var_func(char curChar, FILE *fp)
+int jcc_lexer_keyword_var_func(char curChar, FILE *readFile, FILE *writeFile)
 {
 	while (1) {
-		curChar = getc(fp);
+		curChar = getc(readFile);
 		if ((curChar >= 'A' && curChar <= 'Z')
 					|| (curChar >= 'a' && curChar <= 'z')
 					|| curChar == '_') {
-			printf("%c", curChar);
+			fprintf(writeFile, "%c", curChar);
 		} else if (curChar != EOF && curChar != ' ' && curChar != '\n' && curChar != '	') {
-			printf("\n%c", curChar);
+			fprintf(writeFile, "\n%c", curChar);
 			break;
 		} else {
 			break;
 		}
 	}
-	printf("\n");
+	fprintf(writeFile, "\n");
 	return 0;
 }
 
-int jcc_lexer_char_str(char curChar, FILE *fp)
+int jcc_lexer_char_str(char curChar, FILE *readFile, FILE *writeFile)
 {
 	char anchor = curChar;
 	char dummy;
 	while (1) {
-		curChar = getc(fp);
+		curChar = getc(readFile);
 		if (curChar == '\\') {
-			printf("%c", curChar);
-			dummy = getc(fp);
-			printf("%c", dummy);
+			fprintf(writeFile, "%c", curChar);
+			dummy = getc(readFile);
+			fprintf(writeFile, "%c", dummy);
 		} else if (curChar == anchor) {
-			printf("%c", curChar);
-			printf("\n");
+			fprintf(writeFile, "%c", curChar);
+			fprintf(writeFile, "\n");
 			break;
 		} else if (curChar == EOF) {
-			return 0;
+			break;
 		} else {
-			printf("%c", curChar);
+			fprintf(writeFile, "%c", curChar);
 		}
 	}
 	return 0;
 }
 
-int jcc_lexer_macro(char curChar, FILE *fp)
+int jcc_lexer_macro(char curChar, FILE *readFile, FILE *writeFile)
 {
-	printf("--------------------\n");
-	printf("I can't parse macros :\(\n");
-	while (curChar != '\n') {
-		if (curChar == '\\') {
-			return 0;
-		} else {
-			printf("%c", curChar);
-			curChar = getc(fp);
-		}
-	}
-	printf("\n");
-	printf("--------------------\n");
 	return 0;
 }
 
-int jcc_lexer_comment(char curChar, FILE *fp)
+int jcc_lexer_comment(char curChar, FILE *readFile, FILE *writeFile)
 {
 	char dummy;
-	dummy = getc(fp);
+	dummy = getc(readFile);
 	if (dummy == '/') {
 		while (curChar != '\n') {
-			curChar = getc(fp);
+			curChar = getc(readFile);
 		}
 	} else if (dummy == '*') {
 		while (dummy != '/') {
 			while (curChar != '*') {
-				curChar = getc(fp);
+				curChar = getc(readFile);
 			}
-			dummy = getc(fp);
+			dummy = getc(readFile);
 		}
 	} else {
-		printf("%c\n", curChar);
+		fprintf(writeFile, "%c\n", curChar);
 		if (dummy != EOF && dummy != ' ' && dummy != '\n' && dummy != '	') {
-			printf("%c", dummy);
+			fprintf(writeFile, "%c", dummy);
 		} else {
 			return 0;
 		}
